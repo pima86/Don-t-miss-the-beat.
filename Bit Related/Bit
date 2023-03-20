@@ -1,0 +1,45 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine.UI;
+using UnityEngine;
+
+public class Bit : MonoBehaviour
+{
+    public bool play = false;
+    public float speed = 1;
+
+    [Header("성공 및 실패 스프라이트")]
+    public Image butten;
+    public GameObject item_obj;
+    public Image item_image;
+
+    void Update()
+    {
+        transform.localPosition += Vector3.left * Time.deltaTime * speed;
+    }
+
+    public void Judgment()
+    {
+        if (Move_Butten.Inst.game_obj[0].activeSelf)
+        {
+            if (name != "none")
+            {
+                if (name == "normal_bit")
+                    BitManager.Inst.mob_bouns = true;
+                else if (name == "mob_bit")
+                    BitManager.Inst.mob_bouns = false;
+
+
+                Player_Move.Inst.level_stop();
+                //Player_Move.Inst.HP -= 0.5f;
+
+                gameObject.name = "miss_bit";
+                butten.color = new Color(100 / 255f, 100 / 255f, 100 / 255f, 1);
+            }
+            else
+                butten.color = new Color(100 / 255f, 100 / 255f, 100 / 255f, 1);
+        }
+        else
+            BitManager.Inst.clear_bit(gameObject);
+    }
+}
