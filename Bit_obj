@@ -1,0 +1,78 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Bit_obj : MonoBehaviour
+{
+    Animator anim;
+    void Start()
+    {
+        anim = gameObject.GetComponent<Animator>();
+    }
+
+    void Update()
+    {
+        Timer();
+        Attact();
+    }
+
+    #region 탱글탱글 이펙트
+    void Timer()
+    {
+        if (BitManager.Inst.obj_bouns)
+            anim.Play("바운스", -1, 0f);
+    }
+    #endregion
+    
+    #region 공격모션
+    [SerializeField] float att_speed;
+    bool attact = false;
+    public void Motion_att(int num)
+    {
+        switch (num)
+        {
+            case 0: //동
+                transform.localPosition = new Vector3(0.5f, 0, 0);
+                Player_Move.Inst.face.flipX = false;
+                break;
+            case 1: //서
+                transform.localPosition = new Vector3(-0.5f, 0, 0);
+                Player_Move.Inst.face.flipX = true;
+                break;
+            case 2: //남
+                transform.localPosition = new Vector3(0, -0.5f, 0);
+                break;
+            case 3: //북
+                transform.localPosition = new Vector3(0, 0.5f, 0);
+                break;
+        }
+        attact = true;
+    }
+    void Attact()
+    {
+        if (!attact)
+            return;
+
+        if (transform.localPosition.x >= 0.09f || transform.localPosition.x <= -0.09f)
+        {
+            if (transform.localPosition.x > 0)
+                transform.localPosition -= new Vector3(Time.deltaTime * att_speed, 0, 0);
+            else
+                transform.localPosition += new Vector3(Time.deltaTime * att_speed, 0, 0);
+
+            return;
+        }
+        else if (transform.localPosition.y >= 0.09f || transform.localPosition.y <= -0.09f)
+        {
+            if (transform.localPosition.y > 0)
+                transform.localPosition -= new Vector3(0, Time.deltaTime * att_speed, 0);
+            else
+                transform.localPosition += new Vector3(0, Time.deltaTime * att_speed, 0);
+
+            return;
+        }
+        transform.localPosition = Vector3.zero;
+        attact = false;
+    }
+    #endregion
+}
