@@ -1,0 +1,97 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine.UI;
+using UnityEngine;
+using TMPro;
+
+public class Bit_bouns : MonoBehaviour
+{
+    #region inst
+    public static Bit_bouns Inst { get; private set; }
+    void Awake() => Inst = this;
+    #endregion
+
+    [Header("비트")]
+    [SerializeField] Image main;
+    [SerializeField] Sprite[] main_sprite;
+    public List<Bit> bits;
+
+    [Header("이펙트")]
+    [SerializeField] Animator effect_anim;
+    [SerializeField] Animator text_effect_anim;
+    public TMP_Text text_effect;
+    [SerializeField] TMP_ColorGradient[] text_color;
+
+    [Header("사운드")]
+    [SerializeField] AudioClip Missclip;
+    void OnTriggerEnter2D(Collider2D collider)
+    {
+        main.sprite = main_sprite[1];
+        bits.Add(collider.GetComponent<Bit>());
+
+        BitManager.Inst.obj_bouns = true;
+
+        if (!Move_Butten.Inst.game_obj[0].activeSelf)
+        {
+            bits[0].play = true;
+            bits[0].butten.color = new Color(1, 1, 1, 0);
+            HitEffect();
+        }
+    }
+
+    void OnTriggerExit2D(Collider2D collider)
+    {
+        int addrass = bits.FindIndex(x => x == collider.GetComponent<Bit>());
+
+        if (addrass != -1 && Move_Butten.Inst.game_obj[0].activeSelf)
+        {
+            if (!bits[addrass].play)
+            {
+                text_effect.text = "Miss";
+                text_effect.colorGradientPreset = text_color[0];
+                text_effect_anim.SetTrigger("Hit");
+
+                if (Player_Move.Inst.HP != 0)
+                    SoundManager.Inst.SFXPlay("Miss_Get", Missclip);
+
+                bits[0].Judgment();
+            }
+
+            RaycastHit2D hit_player = Physics2D.Raycast(Player_Move.Inst.transform.position + new Vector3(0, 0.5f, 0), transform.forward, 1, LayerMask.GetMask("Heatline"));
+            if (hit_player.collider != null)
+            {
+                if (Player_Move.Inst.HP != 0)
+                {
+                    SoundManager.Inst.SFXPlay("Miss_Get", Missclip);
+                    Player_Move.Inst.HP -= 0.5f;
+                }
+            }
+
+            bits.RemoveAt(addrass);
+        }
+        else
+        {
+            bits[0].Judgment();
+            bits.RemoveAt(addrass);
+        }
+
+        main.sprite = main_sprite[0];
+        BitManager.Inst.obj_bouns = false;
+
+        if (collider.name == "normal_bit")
+            BitManager.Inst.mob_bouns = false;
+        else if (collider.name == "mob_bit")
+            BitManager.Inst.mob_bouns = true;
+    }
+
+    #region 판정 이펙트
+    public void HitEffect()
+    {
+        text_effect.text = "Purfect";
+        text_effect.colorGradientPreset = text_color[1];
+
+        effect_anim.SetTrigger("Hit");
+        text_effect_anim.SetTrigger("Hit");
+    }
+    #endregion
+}
