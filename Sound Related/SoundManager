@@ -1,0 +1,221 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine.UI;
+using UnityEngine;
+using UnityEngine.Audio;
+using TMPro;
+
+public class SoundManager : MonoBehaviour
+{
+    #region inst
+    public static SoundManager Inst { get; private set; }
+    void Awake() => Inst = this;
+    #endregion
+    public AudioSource MyAudio; //BGM
+    public AudioMixer mixer;
+
+    [Header("노래 선택")]
+    public AudioClip[] music_clip; //BGM 리스트
+    public Image music_illust; //BGM 리스트
+
+    [SerializeField] TMP_Text music_title; //노래 제목
+    [SerializeField] TMP_Text music_name; //사람 이름
+    [SerializeField] TMP_Text music_bpm; //BPM
+    [SerializeField] TMP_Text music_clear; //클리어
+    [SerializeField] TMP_Text music_combo; //콤보
+
+    [SerializeField] Slider music_timer;
+    [SerializeField] Sprite[] music_sprite;
+
+    [Header("사운드 옵션")]
+    [SerializeField] AudioClip Check_clip; //창 닫힐 때
+
+    [Header("노래 진행도")]
+    public Image music_fill; //BGM 리스트
+    public Image item_fill; //BGM 리스트
+
+    void Update()
+    {
+        BGM_Update();
+    }
+
+    #region MP3
+    public void MP3_Setting(int num)
+    {
+        music_illust.sprite = music_sprite[num];
+        Move_Butten.Inst.Next_set(num);
+
+        string[] words = music_clip[num].name.Split('_');
+        music_name.text = words[0];
+        music_title.text = words[1];
+        switch (Player.Inst.clear[num])
+        {
+            case 0:
+                music_clear.enabled = false;
+                break;
+            case 1:
+                music_clear.enabled = true;
+                music_clear.text = "C<br><size=80>Clear";
+                break;
+            case 2:
+                music_clear.enabled = true;
+                music_clear.text = "B<br><size=80>Clear";
+                break;
+            case 3:
+                music_clear.enabled = true;
+                music_clear.text = "A<br><size=80>Clear";
+                break;
+            case 4:
+                music_clear.enabled = true;
+                music_clear.text = "S<br><size=80>Clear";
+                break;
+        }
+
+        if(Player.Inst.all_combo[num])
+            music_combo.enabled = true;
+        else
+            music_combo.enabled = false;
+    }
+
+    public void MP3_Timer()
+    {
+        if (!mouse_click)
+        {
+            music_timer.value = MyAudio.time / MyAudio.clip.length;
+            music_fill.fillAmount = MyAudio.time / MyAudio.clip.length;
+        }
+    }
+
+    bool mouse_click = false;
+    public void MP3_Timer_Down()
+    {
+        mouse_click = true;
+    }
+
+    public void MP3_Timer_Up()
+    {
+        MyAudio.time = music_timer.value * MyAudio.clip.length;
+        mouse_click = false;
+    }
+    #endregion
+    #region BGM
+    public bool Play_ing = false;
+    double time = 0d;
+    public bool end_music = false;
+    float origin_volume;
+    void BGM_Update()
+    {
+        if (Play_ing)
+        {
+            time += Time.deltaTime;
+            if (!MyAudio.isPlaying && BitManager.Inst.bit_obj.Count <= 0)
+            {
+                if (!Move_Butten.Inst.game_obj[0].activeSelf)
+                {
+                    MyAudio.time = 0;
+                    MyAudio.Play();
+                    return;
+                }
+
+                //Player_Move.Inst.End();
+                Play_ing = false;
+
+                Player_Move.Inst.Clear();
+                Debug.Log("노래 끝");
+            }
+            else
+                MP3_Timer();
+        }
+        else
+            time = 0d;
+
+        if (end_music)
+        {
+            if (MyAudio.volume > 0.01f)
+                MyAudio.volume -= Time.deltaTime * 0.05f;
+        }
+    }
+
+    int now_play_song = 0;
+    public void Music_select(int num)
+    {
+        if (now_play_song != num || Move_Butten.Inst.game_obj[0].activeSelf)
+        {
+            now_play_song = num;
+            MyAudio.time = 0;
+            origin_volume = MyAudio.volume;
+
+            if (num == 0)
+                BitManager.Inst.bpm = 100;
+            else if (num == 1)
+                BitManager.Inst.bpm = 122;
+            else if (num == 2)
+                BitManager.Inst.bpm = 100;
+            else if (num == 3)
+                BitManager.Inst.bpm = 95;
+            else if (num == 4)
+                BitManager.Inst.bpm = 108;
+            else if (num == 5)
+                BitManager.Inst.bpm = 95;
+
+            music_bpm.text = "BPM." + BitManager.Inst.bpm.ToString();
+            MyAudio.clip = music_clip[num];
+
+            //메인 페이지일 때
+            //mp3 페이지 일 때
+
+            MyAudio.Play();
+            Play_ing = true;
+        }
+    }
+
+    public void ReStart()
+    {
+        end_music = false;
+        MyAudio.volume = origin_volume;
+        MyAudio.time = 0;
+        Music_select(Player.Inst.play_music);
+    }
+
+    [SerializeField] List<double> notes;
+    public void Create_note()
+    {
+        notes.Add(time);
+    }
+    #endregion
+    #region 사운드 믹서 관련
+    public void BGSoundVolume(float val)
+    {
+        mixer.SetFloat("BG", Mathf.Log10(val) * 20);
+    }
+
+    public void SFXSoundVolume(float val)
+    {
+        mixer.SetFloat("SFX", Mathf.Log10(val) * 20);
+    }
+    public void Menu_BGMove() => BGPlay("확인용", Check_clip);
+    public void Menu_SFXMove() => SFXPlay("확인용", Check_clip);
+
+    public void BGPlay(string sfxName, AudioClip clip)
+    {
+        GameObject go = new GameObject(sfxName + "Sound");
+        AudioSource audioSource = go.AddComponent<AudioSource>();
+        audioSource.outputAudioMixerGroup = mixer.FindMatchingGroups("BGSound")[0];
+        audioSource.clip = clip;
+        audioSource.Play();
+
+        Destroy(go, clip.length);
+    }
+
+    public void SFXPlay(string sfxName, AudioClip clip)
+    {
+        GameObject go = new GameObject(sfxName + "Sound");
+        AudioSource audioSource = go.AddComponent<AudioSource>();
+        audioSource.outputAudioMixerGroup = mixer.FindMatchingGroups("SFX")[0];
+        audioSource.clip = clip;
+        audioSource.Play();
+
+        Destroy(go, clip.length);
+    }
+#endregion
+}
