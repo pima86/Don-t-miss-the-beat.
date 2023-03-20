@@ -1,0 +1,165 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine.UI;
+using UnityEngine;
+using TMPro;
+
+public class BitManager : MonoBehaviour
+{
+    #region inst
+    public static BitManager Inst { get; private set; }
+    void Awake() => Inst = this;
+    #endregion
+    [Header("코인")]
+    [SerializeField] Animator coin_anim;
+
+    [Header("박자")]
+    [SerializeField] GameObject[] bit_prefab;
+    public List<GameObject> bit_obj;
+    [SerializeField] Transform[] bit_spawnpoint;
+    [SerializeField] Transform[] bit_bag;
+    [SerializeField] Sprite[] bit_sprite;
+
+    [Header("콤보")]
+    [SerializeField] TMP_Text[] combo_txt;
+    [SerializeField] float color_speed;
+
+    [SerializeField] TMP_Text text_txt;
+
+    [Header("난이도")]
+    public int mob_spawn_int;
+
+    float start_time = 0f;
+    void Update()
+    {
+        //오브젝트들의 타이머
+        if(Move_Butten.Inst.game_obj[0].activeSelf)
+            Player_Move.Inst.Check();
+        
+        if (start_time <= 1f)
+            start_time += Time.deltaTime;
+        else
+        {
+            if (bpm == -1)
+            {
+                bpm = 0;
+                GameObject obj = Create_Beat();
+                if(obj != null)
+                    obj.name = "normal_bit";
+            }
+        }
+
+        if(bpm > 0)//Music_Start.Inst.MyAudio.isPlaying)
+            Bit_Timer();
+
+        Timer();
+    }
+
+    #region 코인
+    void Timer()
+    {
+        if (obj_bouns)
+            coin_anim.Play("Coin", -1, 0f);
+    }
+    #endregion
+    #region 비트 타이밍
+    [Header("타이머")]
+    public float bpm; //박자
+    public float speed = 1; //속도
+    public double time = 0d;
+
+    public bool obj_bouns = false;
+    public bool mob_bouns = false;
+
+    int button_image = 0;
+
+    GameObject Create_Beat()
+    {
+        GameObject obj = null;
+
+        if (Move_Butten.Inst.game_obj[0].activeSelf)
+            obj = Instantiate(bit_prefab[0], bit_spawnpoint[0].position, transform.rotation, bit_bag[0]);
+        else
+            obj = Instantiate(bit_prefab[0], bit_spawnpoint[1].position, transform.rotation, bit_bag[1]);
+
+        return obj;
+    }
+
+    void Bit_Timer()
+    {
+        time += Time.deltaTime;
+        if (time >=  60d /bpm)
+        {
+            time -= 60d / bpm;
+
+            if (bpm != 0)
+            {
+                if (SoundManager.Inst.MyAudio.isPlaying)
+                {
+                    GameObject obj = Create_Beat();
+                    
+                    bit_obj.Add(obj);
+
+                    if (!Move_Butten.Inst.game_obj[0].activeSelf)
+                        obj.name = "none";
+                    else if (Player_Move.Inst.HP == 0)
+                        obj.name = "none";
+                    else
+                    {
+                        if (button_image == 11)
+                        {
+                            obj.GetComponent<Bit>().butten.enabled = false;
+                            obj.GetComponent<Bit>().item_obj.SetActive(true);
+
+                            obj.GetComponent<Bit>().item_image.sprite = bit_sprite[Random.Range(0, bit_sprite.Length)];
+
+                            obj.name = "Item_bit";
+                            button_image = 1;
+                        }
+                        else
+                        {
+                            obj.GetComponent<Bit>().butten.enabled = true;
+                            obj.GetComponent<Bit>().item_obj.SetActive(false);
+
+                            if (button_image % 2 == 0)
+                                obj.name = "normal_bit";
+                            else if (button_image % 2 == 1)
+                                obj.name = "mob_bit";
+                        }
+                    }
+
+                    if (obj.name == "mob_bit")
+                    {
+                        //몬스터 스폰
+                        for (int i = 0; i < mob_spawn_int; i++)
+                            Mob_spawn.Inst.Spawn();
+                        //아이템 상자 스폰
+                        Mob_spawn.Inst.Spawn_box();
+                    }
+
+                    button_image++;
+                }
+            }
+        }
+    }
+
+    public void clear_bit(GameObject obj)
+    {
+        int num = bit_obj.FindIndex(x => x == obj);
+
+        Destroy(obj);
+        if (num != -1)
+            bit_obj.RemoveAt(num);
+    }
+
+    public void ReStart()
+    {
+        time = 0;
+
+        for (int i = 0; i < bit_obj.Count; i++)
+            Destroy(bit_obj[i]);
+        bit_obj.RemoveRange(0, bit_obj.Count);
+        button_image = 0;
+    }
+    #endregion
+}
