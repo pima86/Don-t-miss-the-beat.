@@ -1,0 +1,16 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Music_Start : MonoBehaviour
+{ 
+    #처음 비트가 판정 오브젝트 위에 도착했을 때부터 노래 재생
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.name == "normal_bit" && !SoundManager.Inst.Play_ing)
+        {
+            SoundManager.Inst.Music_select(Player.Inst.play_music);
+        }
+    }
+}
