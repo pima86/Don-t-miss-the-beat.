@@ -13,7 +13,6 @@ public class Move_Butten : MonoBehaviour
     [SerializeField] GameObject player;
     [SerializeField] Bit_bouns bit_bouns;
     [SerializeField] Bit_bouns[] bouns_list;
-
     [Header("사운드")]
     [SerializeField] AudioClip move_clip;
     [SerializeField] AudioClip Open_clip;
