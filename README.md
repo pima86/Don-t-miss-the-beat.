@@ -1,4 +1,4 @@
-# Don-t-miss-the-beat.
+# Don-t-miss-the-beat
 슈퍼센트 공모전 목적 모바일 리듬 게임
 
 - Bit Related
